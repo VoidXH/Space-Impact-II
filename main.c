@@ -9,6 +9,10 @@
 #include "audio.h"
 #include "font.h"
 
+#define MENU_SCREEN_MAIN -1
+#define MENU_SCREEN_HIGH_SCORE -2
+#define MENU_SCREEN_PAUSE -3
+
 /** Képkockafrissítõ funkció **/
 Uint32 FrameUpdate(Uint32 ms, void *param) {
     SDL_Event ev;
@@ -107,19 +111,29 @@ int main(int argc, char *argv[]) {
             if (IntroPhase) { /* Bevezető animáció félbeszakítása, ha megy */
                 IntroPhase = 0;
                 AudioFlags |= SOUND_MENUBTN; /* Bármilyen gombra adjon ki hangot, még ami nem is csinál semmit */
+            #ifdef PAUSE
+            /** Szünet képernyő **/
+            } else if (Level == MENU_SCREEN_PAUSE) {
+                if (e.key.keysym.sym == SDLK_RETURN) {
+                    Level = MenuItem == 1 ? SavedLevel : MENU_SCREEN_MAIN;
+                } else if (e.key.keysym.sym == SDLK_UP || e.key.keysym.sym == SDLK_DOWN)
+                    MenuItem = 3 - MenuItem;
+                else if (e.key.keysym.sym == SDLK_ESCAPE)
+                    Level = MENU_SCREEN_MAIN;
+            #endif /* PAUSE */
             /** Rekord- és játék vége képernyõ **/
-            } else if (Level == -2 || Level == LevelCount) {
+            } else if (Level == MENU_SCREEN_HIGH_SCORE || Level == LevelCount) {
                 if (e.key.keysym.sym == SDLK_RETURN || e.key.keysym.sym == SDLK_ESCAPE) /* Enterre vagy Esc-re visszatér a főmenübe */
                     Level = -1;
                 AudioFlags |= SOUND_MENUBTN; /* Bármilyen gombra adjon ki hangot, még ami nem is csinál semmit */
             /** Fõmenü **/
-            } else if (Level == -1) {
+            } else if (Level == MENU_SCREEN_MAIN) {
                 AudioFlags |= SOUND_MENUBTN; /* Bármilyen gombra adjon ki hangot, még ami nem is csinál semmit */
                 if (e.key.keysym.sym == SDLK_RETURN) { /* Enter */
                     if (SavedLevel == 0)
                         MenuItem++; /* A menü elemeit a folytatással kezdõdõ menühöz viszonyítja (új játék 1. hely helyett a 2., stb.) */
                     if (MenuItem == 3) {
-                        Level = -2; /* Ez a rekordképernyõ azonosítõja */
+                        Level = MENU_SCREEN_HIGH_SCORE; /* Ez a rekordképernyõ azonosítõja */
                         #ifdef LEGACY_TOP_SCORE
                         TimeInScores = 0; /* Kezdje elölről a rekordképernyő animációját */
                         #endif /* LEGACY_TOP_SCORE */
@@ -176,7 +190,11 @@ int main(int argc, char *argv[]) {
                     case SDLK_ESCAPE:
                         SavedLevel = Level; /* Szint mentése */
                         SaveLevel(Level); /* Mentse el, hogy erről a szintről lépett ki a játékos */
-                        Level = -1; /* Menübe lépés */
+                        #ifdef PAUSE
+                        Level = MENU_SCREEN_PAUSE; /* Szünet menübe lépés */
+                        #else
+                        Level = MENU_SCREEN_MAIN; /* Menübe lépés */
+                        #endif /* PAUSE */
                         MenuItem = 1; /* A menü elsõ elemre állítása */
                         break;
                     default: break;
@@ -216,8 +234,24 @@ int main(int argc, char *argv[]) {
                 itoa(Player.Score, ScoreText, 10); /* Pontszám szöveggé alakítása */
                 DrawText(PixelMap, "Game over\nYour score:", NewVec2(1, 1), 9);
                 DrawText(PixelMap, ScoreText, NewVec2(1, 19), 0);
+            #ifdef PAUSE
+            /** Szünet menü **/
+            } else if (Level == MENU_SCREEN_PAUSE) {
+                /* A menüelem-jelzõ kezdete, ez Nokia 3310-en 8-2- */
+                DrawSmallNumber(PixelMap, 8, 1, NewVec2(57, 0)); /* A számírót meghívni kevesebb bájtba kerül */
+                DrawObject(PixelMap, GetObject(gShot), NewVec2(61, 2));
+                DrawSmallNumber(PixelMap, 2, 1, NewVec2(65, 0));
+                DrawObject(PixelMap, GetObject(gShot), NewVec2(69, 2));
+                DrawSmallNumber(PixelMap, 1, 1, NewVec2(73, 0));
+                DrawObject(PixelMap, GetObject(gShot), NewVec2(77, 2));
+                DrawSmallNumber(PixelMap, gNum0 + MenuItem, 1, NewVec2(81, 0)); /* A kiválasztott menüelem száma */
+                DrawText(PixelMap, "Continue\nExit", NewVec2(1, 7), 11); /* Menüelemek kiírása, az egészet szövegként */
+                InvertScreenPart(PixelMap, NewVec2(0, MenuItem * 11 - 5), NewVec2(76, MenuItem * 11 + 5)); /* A kiválasztott menüelem körül invertálja a képet */
+                DrawText(PixelMap, "Select", NewVec2(24, 40), 0); /* Select felirat alulra */
+                DrawScrollBar(PixelMap, (MenuItem - 1) * 100); /* Görgetõsáv rajzolása */
+            #endif /* PAUSE */
             /** Rekodrképernyõ **/
-            } else if (Level == -2) {
+            } else if (Level == MENU_SCREEN_HIGH_SCORE) {
                 #ifdef LEGACY_TOP_SCORE
                 const Uint8 OneSign[24] = {0,0,1,0,0,1,1,0,1,1,1,0,0,1,1,0,0,1,1,0,1,1,1,1}; /* Egy egyes pixeltérképe */
                 char ScoreText[6]; /* Maximum ötjegyű lehet + lezáró karakter */
@@ -249,7 +283,7 @@ int main(int argc, char *argv[]) {
                 }
                 #endif /* LEGACY_TOP_SCORE*/
             /** Fõmenü **/
-            } else if (Level == -1) {
+            } else if (Level == MENU_SCREEN_MAIN) {
                 /* A menüelem-jelzõ kezdete, ez Nokia 3310-en 8-2- */
                 DrawSmallNumber(PixelMap, 8, 1, NewVec2(65, 0)); /* A számírót meghívni kevesebb bájtba kerül */
                 DrawObject(PixelMap, GetObject(gShot), NewVec2(69, 2));

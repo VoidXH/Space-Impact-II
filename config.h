@@ -16,5 +16,6 @@
 #define BONUS_COLLIDER /* A játék néhány verziójában a bónuszobjektum begyűjtötte a lövedékeket pontokért, ha ez definiálva van, így lesz */
 /*#define ZEROTH_LIFE*/ /* A játék néhány verziójában az életek száma nem 1 és 3, hanem 0 és 2 között mozgott, ha ez definiálva van, így lesz */
 #define LEGACY_TOP_SCORE /* Az eredeti rekordképernyő használata (kikapcsolásával a top 10 pontszám látszik) */
+/*#define PAUSE*/ /* Ha ez definiálva van, az Esc gomb játék közben megnyomva egy szünet menüt nyit meg */
 
 #endif /* CONFIG_H */
